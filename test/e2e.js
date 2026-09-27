@@ -227,7 +227,14 @@ function check(name, ok, info) { results.push({ name, ok: !!ok, info }); console
   // Sorting: the Sort chip switches between newest and oldest first.
   const firstNum = () => page.evaluate(() => { const t = document.querySelector('.grid .card .card-title'); const m = t && /#(\d+)/.exec(t.textContent); return m ? +m[1] : null; });
   const newest = await firstNum();
-  await page.evaluate(() => Focus.set(document.querySelector('.chip-sort')));
+  // The remote reaches it along the chip row, and straight up from the posts under it.
+  await page.evaluate(() => Focus.set(document.querySelector('.chips .chip')));
+  for (let i = 0; i < 8 && !(await page.evaluate(() => Focus.current.classList.contains('chip-sort'))); i++) await key('ArrowRight');
+  const alongRow = await page.evaluate(() => Focus.current.classList.contains('chip-sort'));
+  await page.evaluate(() => Focus.set(document.querySelectorAll('.grid .card')[3]));
+  await key('ArrowUp');
+  const fromBelow = await page.evaluate(() => Focus.current.classList.contains('chip-sort'));
+  check('the remote reaches the Sort chip along the chips and from the posts below', alongRow && fromBelow, alongRow + ' / ' + fromBelow);
   await key('Enter'); await page.waitForTimeout(1000);
   const oldest = await firstNum();
   const oldestLabel = await page.textContent('.chip-sort');

@@ -151,13 +151,14 @@
           ? Math.min(r.bottom, o.bottom) - Math.max(r.top, o.top)
           : Math.min(r.right, o.right) - Math.max(r.left, o.left);
         var score = primary + secondary * (overlap > 0 ? 0.3 : 2.5);
-        if (group && el.closest('[data-nav-group]') === group) score *= 0.8;
+        // Within a group, and most of all along a row of chips, keep going sideways rather than dropping out of it.
+        if (group && el.closest('[data-nav-group]') === group) score *= (dir === 'left' || dir === 'right') && overlap > 0 ? 0.2 : 0.8;
         if (score < bestScore) { bestScore = score; best = el; }
       });
       if (best) {
         // When entering a remembered group (e.g. the sidebar or a row), restore its last focused item.
         var g = best.closest('[data-nav-group]');
-        if (g && g !== group && g.dataset.remember && g._last && list.indexOf(g._last) >= 0) best = g._last;
+        if (g && g !== group && g.dataset.remember && g._last && list.indexOf(g._last) >= 0 && !best.dataset.direct) best = g._last;
         if (g && g.dataset.navGroup !== 'chips') g._last = best;
         Focus.set(best);
         return true;

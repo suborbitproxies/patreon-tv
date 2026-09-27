@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Patreon TV (preview)",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Try the Patreon TV app on your computer: opens patreon.com as the TV app, signed in as you. Unofficial.",
   "icons": { "128": "icon.png" },
   "action": { "default_title": "Open Patreon TV" },

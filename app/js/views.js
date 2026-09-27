@@ -157,7 +157,9 @@
   function sortChip(storeKey, order, onChange) {
     var sort = Store.get(storeKey, order[0]);
     if (order.indexOf(sort) < 0) sort = order[0];
+    // data-direct: coming up from the posts below lands on it, instead of on the row's selected filter.
     var chip = h('div.chip.chip-sort.focusable', {
+      dataset: { direct: '1' },
       onclick: function () {
         Focus.moves++; // keep focus here while the list reloads
         sort = order[(order.indexOf(sort) + 1) % order.length];
