@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets"
+        id="http://suborbit.al/patreontv" version="2.2.0" viewmodes="maximized">
+    <tizen:application id="PtrnTVapp1.PatreonTV" package="PtrnTVapp1" required_version="3.0"/>
+    <name>Patreon TV</name>
+    <description>Unofficial Patreon client for Samsung Tizen TVs</description>
+    <author>suborbit.al</author>
+    <icon src="icon.png"/>
+    <content src="index.html"/>
+    <feature name="http://tizen.org/feature/screen.size.all"/>
+    <feature name="http://tizen.org/feature/web.service"/>
+    <tizen:profile name="tv-samsung"/>
+
+    <access origin="*" subdomains="true"/>
+    <tizen:allow-navigation>*</tizen:allow-navigation>
+    <tizen:content-security-policy>default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; media-src * data: blob:; connect-src *; frame-src *</tizen:content-security-policy>
+
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+
+    <!-- The helper that opens patreon.com and loads the app into it (see service/helper.js). -->
+    <tizen:service id="PtrnTVapp1.Helper">
+        <tizen:content src="service/helper.js"/>
+        <tizen:name>PatreonTVHelper</tizen:name>
+        <tizen:description>Opens patreon.com for Patreon TV and loads the app into it</tizen:description>
+    </tizen:service>
+
+    <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable"
+                   encryption="disable" install-location="auto" hwkey-event="enable"/>
+</widget>
