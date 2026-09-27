@@ -38,6 +38,7 @@
 
   var ICONS = {
     play: 'M8 5v14l11-7z',
+    check: 'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z',
     back: 'M15.4 5.4L14 4l-8 8 8 8 1.4-1.4L8.8 12z',
     pause: 'M6 5h4v14H6zm8 0h4v14h-4z',
     audio: 'M12 3v10.55A4 4 0 1 0 14 17V7h4V3z',
@@ -191,7 +192,7 @@
     get: function (postId) { return Progress.all()[postId] || null; },
     save: function (post, position, dur) {
       var all = Progress.all();
-      if (dur && position / dur > 0.95) { delete all[post.id]; }
+      if (dur && position / dur > 0.95) { delete all[post.id]; Watched.mark(post.id, 'watched'); }
       else if (position > 5) {
         all[post.id] = { position: position, duration: dur, at: Date.now(),
           post: { id: post.id, title: post.title, thumb: post.thumb, kind: post.kind,
@@ -205,7 +206,32 @@
       var all = Progress.all();
       return Object.keys(all).map(function (k) { return all[k]; }).sort(function (a, b) { return b.at - a.at; });
     },
-    remove: function (postId) { var all = Progress.all(); delete all[postId]; Store.set('progress', all); }
+    remove: function (postId) { var all = Progress.all(); delete all[postId]; Store.set('progress', all); },
+    // Played to the end: no resume point any more, and the post counts as watched.
+    finish: function (postId) { Progress.remove(postId); Watched.mark(postId, 'watched'); }
+  };
+
+  // Posts you've watched or listened to the end ('watched'), or opened when there's nothing to play ('seen').
+  // Kept on this device, like resume points. Screens listen for 'ptv-watched' to update their cards.
+  var watchedCache = null;
+  var Watched = {
+    all: function () { if (!watchedCache) watchedCache = Store.get('watched', {}); return watchedCache; },
+    get: function (postId) { return Watched.all()[postId] || null; },
+    mark: function (postId, how) {
+      var all = Watched.all(), had = all[postId];
+      if (had && (had.how === 'watched' || had.how === how)) return;
+      all[postId] = { at: Date.now(), how: how || 'watched' };
+      var keys = Object.keys(all);
+      if (keys.length > 5000) {
+        keys.sort(function (a, b) { return all[a].at - all[b].at; }).slice(0, keys.length - 5000).forEach(function (k) { delete all[k]; });
+      }
+      Watched.save(postId);
+    },
+    remove: function (postId) { delete Watched.all()[postId]; Watched.save(postId); },
+    save: function (postId) {
+      Store.set('watched', watchedCache);
+      try { document.dispatchEvent(new CustomEvent('ptv-watched', { detail: postId })); } catch (e) { /* very old engine */ }
+    }
   };
 
   function toast(msg, ms) {
@@ -282,5 +308,6 @@
     sanitize: sanitize, tiptapToHtml: tiptapToHtml, toast: toast, qrSvg: qrSvg };
   global.Store = Store;
   global.Progress = Progress;
+  global.Watched = Watched;
   global.Host = Host;
 })(window);

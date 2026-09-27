@@ -10,7 +10,9 @@ Not made or endorsed by Patreon.
 
 - **Home feed** of the latest posts from everyone you support or follow, with filters for videos, audio, images and
   text posts, loading more as you scroll.
-- **Continue watching**: resume videos and audio where you left off.
+- **Continue watching**: resume videos and audio where you left off, YouTube and Vimeo included.
+- **Watched**: posts you've watched to the end show "Watched", and opened text and image posts show "Seen". Any post
+  can be marked watched or not by hand. This is kept on each TV (or browser) separately.
 - **Your creators**: every membership, with your tier price.
 - **Creator pages**: cover, description, membership tiers, all posts filtered by type and sorted newest or oldest
   first, and collections (in the creator's order, or by date).

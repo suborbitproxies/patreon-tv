@@ -95,6 +95,12 @@ p { margin: 0 0 14px; }
 .card-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: rgba(255, 255, 255, .2); }
 .card-progress div { height: 100%; background: var(--accent); }
 .card.locked .card-thumb { filter: saturate(.3) brightness(.55); }
+.card.watched .card-thumb::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0, 0, 0, .5); }
+.card.watched .card-title { color: var(--muted); }
+.badge-watched { position: absolute; top: 14px; right: 14px; z-index: 1; background: rgba(20, 20, 24, .85); color: var(--text);
+  padding: 4px 14px 4px 10px; border-radius: 8px; font-size: 22px; }
+.card.watched .badge, .card.watched .card-progress { z-index: 1; }
+.watched-note:not(:empty) { margin-left: 18px; color: var(--text); }
 .lock { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 56px; filter: none; }
 .lock small { font-size: 24px; margin-top: 6px; }
 .nsfw .card-thumb, .nsfw .avatar, .post-hero.nsfw { filter: blur(24px); }

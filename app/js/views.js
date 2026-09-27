@@ -44,8 +44,29 @@
     );
     card._post = post;
     card._queue = queueFn;
+    paintWatched(card);
     return card;
   }
+
+  // Watched posts are dimmed with a "Watched" (or, for posts with nothing to play, "Seen") label.
+  function paintWatched(card) {
+    var w = Watched.get(card._post.id), thumb = card.querySelector('.card-thumb');
+    var old = thumb.querySelector('.badge-watched');
+    if (old) thumb.removeChild(old);
+    card.classList.toggle('watched', !!w);
+    if (!w) return;
+    var bar = thumb.querySelector('.card-progress');
+    if (bar && w.how === 'watched' && !Progress.get(card._post.id)) thumb.removeChild(bar);
+    thumb.appendChild(h('span.badge-watched', U.icon('check'), w.how === 'seen' ? ' Seen' : ' Watched'));
+  }
+  document.addEventListener('ptv-watched', function (e) {
+    Array.prototype.forEach.call(document.querySelectorAll('.card'), function (c) {
+      if (!c._post || c._post.id !== e.detail) return;
+      // A finished video leaves the Continue row.
+      if (c.closest('[data-nav-group="continue"]')) { if (!Progress.get(e.detail) && c.parentNode) c.parentNode.removeChild(c); return; }
+      paintWatched(c);
+    });
+  });
 
   // Infinite, filterable grid of posts.
   function PostGrid(loader, opts) {
@@ -346,6 +367,7 @@
             h('span.badge', U.icon(r.post.kind === 'audio' ? 'audio' : 'play'), ' ' + U.duration(r.duration - r.position) + ' left'),
             h('div.card-progress', h('div', { style: { width: (r.position / r.duration * 100) + '%' } }))),
           h('div.card-body', h('div.card-title', r.post.title), h('div.card-meta', h('span', r.post.campaign ? r.post.campaign.name : ''))));
+        c._post = { id: r.post.id };
         row.appendChild(c);
       });
       el.appendChild(h('section.section', h('h2', 'Continue'), row));
@@ -574,8 +596,27 @@
       if (p.campaign) actions.appendChild(h('div.btn.secondary.focusable', { onclick: function () { App.push(Views.creator(p.campaign)); } }, p.campaign.name));
       if (p.url) actions.appendChild(h('div.btn.secondary.focusable', { onclick: function () { App.qr('Open this post on your phone', p.url); } }, 'Open on phone'));
 
+      // Posts with nothing to play count as seen once opened. Any post can be marked by hand, e.g. one watched elsewhere.
+      if (p.canView && !playable) Watched.mark(p.id, 'seen');
+      var watchedNote = h('span.watched-note');
+      var watchBtn = h('div.btn.secondary.focusable', {
+        onclick: function () {
+          if (Watched.get(p.id)) Watched.remove(p.id);
+          else { Progress.remove(p.id); Watched.mark(p.id, 'watched'); }
+          paintWatchState();
+        }
+      });
+      function paintWatchState() {
+        var w = Watched.get(p.id);
+        watchBtn.textContent = w ? 'Mark as not watched' : 'Mark as watched';
+        U.clear(watchedNote);
+        if (w) { watchedNote.appendChild(U.icon('check')); watchedNote.appendChild(document.createTextNode((w.how === 'seen' ? ' Seen ' : ' Watched ') + U.timeAgo(new Date(w.at).toISOString()))); }
+      }
+      paintWatchState();
+      if (p.canView) actions.appendChild(watchBtn);
+
       var head = h('div.post-head',
-        h('div.post-meta.muted', (p.campaign ? p.campaign.name + '  ·  ' : '') + U.timeAgo(p.published) + '  ·  ' + KIND_LABEL[p.kind]),
+        h('div.post-meta.muted', (p.campaign ? p.campaign.name + '  ·  ' : '') + U.timeAgo(p.published) + '  ·  ' + KIND_LABEL[p.kind], watchedNote),
         h('h1', p.title),
         p.tags.length ? h('div.tags', p.tags.map(function (t) { return h('span.tag', '#' + t); })) : null);
 

@@ -158,7 +158,7 @@
     media.addEventListener('pause', function () { showChrome(true); paint(); });
     media.addEventListener('play', paint);
     media.addEventListener('ended', function () {
-      Progress.remove(video.post.id);
+      Progress.finish(video.post.id);
       if (Store.settings().autoplayNext) playNext(1);
     });
 
@@ -244,7 +244,7 @@
         h('div.np-state'), h('div.np-fill'));
       document.body.appendChild(Audio.bar);
       ['timeupdate', 'play', 'pause', 'durationchange', 'progress'].forEach(function (ev) { media.addEventListener(ev, Audio.paint); });
-      media.addEventListener('ended', function () { Progress.remove(Audio.post.id); if (!Audio.next(1)) Audio.paint(); });
+      media.addEventListener('ended', function () { Progress.finish(Audio.post.id); if (!Audio.next(1)) Audio.paint(); });
     },
     open: function (post, queue, index) {
       if (!Audio.media) Audio.build();
@@ -319,7 +319,7 @@
       embedTrouble(code === 101 || code === 150 ? 'The creator of this video doesn\'t allow it to play outside YouTube.' : 'The ' + embed.link.provider + ' player reported error ' + code + '.');
     }
     if (d.event === 'onReady' || d.event === 'ready') {
-      if (embed.link.provider === 'Vimeo') ['play', 'pause', 'error', 'timeupdate'].forEach(function (ev) { send({ method: 'addEventListener', value: ev }); });
+      if (embed.link.provider === 'Vimeo') ['play', 'pause', 'error', 'timeupdate', 'finish'].forEach(function (ev) { send({ method: 'addEventListener', value: ev }); });
     }
     if (d.event === 'infoDelivery' && d.info) {
       if (typeof d.info.playerState === 'number') embed.state = d.info.playerState;
@@ -333,7 +333,21 @@
       if (d.data && d.data.duration > 0) embed.duration = d.data.duration;
     }
     if (d.event === 'pause') embed.state = 2;
+    if (d.event === 'finish') embed.state = 0;
     if (embed.state === 1) hideTrouble();
+    embedProgress();
+  }
+  // The post's own YouTube or Vimeo video gets a resume point and counts as watched near the end, like Patreon's.
+  function mainEmbed() { return embed.post && embed.post.embed && embed.link && embed.post.embed.url === embed.link.url; }
+  function embedProgress() {
+    if (!mainEmbed() || embed.done) return;
+    if (embed.state === 0 || (embed.duration && embed.time / embed.duration >= 0.9)) {
+      embed.done = true;
+      Progress.finish(embed.post.id);
+    } else if (embed.duration && embed.time > 5 && Date.now() - (embed.saved || 0) > 5000) {
+      embed.saved = Date.now();
+      Progress.save(embed.post, embed.time, embed.duration);
+    }
   }
   // YouTube can still go to the TV's YouTube app when its player won't play here; anything else goes to the phone.
   function youtubeApp() { return Host.tv() && embed.link && embed.link.provider === 'YouTube'; }
@@ -357,8 +371,15 @@
       global.addEventListener('message', onEmbedMessage);
     }
     var src = link.player;
+    embed.link = link; embed.post = post; embed.state = -1; embed.time = link.start || 0; embed.duration = 0; embed.done = false; embed.saved = 0;
+    var prog = mainEmbed() && Progress.get(post.id);
+    if (prog && prog.position > 5 && (!prog.duration || prog.position / prog.duration < 0.9)) {
+      embed.time = Math.floor(prog.position);
+      if (link.provider === 'YouTube') src = src.replace(/&start=\d+/, '') + '&start=' + embed.time;
+      else src = src.split('#')[0] + '#t=' + embed.time + 's';
+      U.toast('Resuming at ' + U.duration(embed.time) + '. Choose Start over on the post to begin again.', 4000);
+    }
     if (link.provider === 'YouTube' && /^https?:/.test(location.protocol)) src += '&origin=' + encodeURIComponent(location.origin);
-    embed.link = link; embed.post = post; embed.state = -1; embed.time = link.start || 0; embed.duration = 0;
     embed.frame = h('iframe', { src: src, allow: 'autoplay; fullscreen; encrypted-media; picture-in-picture', tabIndex: -1, frameBorder: 0 });
     embed.frame.addEventListener('load', function () {
       if (link.provider === 'YouTube') send({ event: 'listening', id: 'ptv', channel: 'widget' });
@@ -406,6 +427,7 @@
     flashHint();
   }
   function closeEmbed() {
+    if (mainEmbed() && !embed.done && embed.duration && embed.time > 5) Progress.save(embed.post, embed.time, embed.duration);
     clearTimeout(embed.timer);
     clearTimeout(embed.hintTimer);
     U.clear(embed.el.querySelector('.embed-frame'));

@@ -309,6 +309,58 @@ function check(name, ok, info) { results.push({ name, ok: !!ok, info }); console
   await key('Escape'); await page.waitForTimeout(300);
   await key('Escape'); await page.waitForTimeout(300);
 
+  // 12c. Watched: videos played to the end, YouTube videos near the end, and opened text posts are marked.
+  await page.evaluate(() => App.go('home'));
+  await page.waitForSelector('.grid .card'); await page.waitForTimeout(600);
+  const vidId = await page.evaluate(() => {
+    const c = Array.prototype.find.call(document.querySelectorAll('.grid .card'), (x) => x._post && x._post.kind === 'video' && x._post.video && x._post.canView && !Watched.get(x._post.id));
+    Player.play(c._post, [c._post], 0);
+    return c._post.id;
+  });
+  await page.waitForTimeout(1500);
+  // The sample video is streamed without a length, so it can't be sought to the end: send the end of playback.
+  await page.evaluate(() => document.querySelector('#player video').dispatchEvent(new Event('ended')));
+  await page.waitForTimeout(500);
+  if (await page.evaluate(() => Player.active === 'video')) { await key('Escape'); await page.waitForTimeout(400); }
+  const inContinue = await page.evaluate((id) => Array.prototype.some.call(document.querySelectorAll('[data-nav-group="continue"] .card'), (c) => c._post && c._post.id === id), vidId);
+  const vidCard = await page.evaluate((id) => {
+    const c = Array.prototype.find.call(document.querySelectorAll('.grid .card'), (x) => x._post && x._post.id === id);
+    return { watched: !!(Watched.get(id) || {}).how, cls: c.classList.contains('watched'), badge: (c.querySelector('.badge-watched') || {}).textContent || '' };
+  }, vidId);
+  check('a video played to the end shows as Watched on its card, and leaves Continue', vidCard.watched && vidCard.cls && /Watched/.test(vidCard.badge) && !inContinue,
+    JSON.stringify([vidId, vidCard, inContinue]));
+  await shot('20d-watched');
+
+  const ytMessage = (info) => page.evaluate((i) => {
+    const f = document.querySelector('#embed iframe');
+    window.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ event: 'infoDelivery', info: i }), source: f.contentWindow }));
+  }, info);
+  await page.evaluate(() => Api.post('49989').then((p) => { window._ytp = p; Player.play(p, [p], 0); }));
+  await page.waitForTimeout(600);
+  await ytMessage({ playerState: 1, currentTime: 40, duration: 100 });
+  await key('Escape'); await page.waitForTimeout(300);
+  const ytSaved = await page.evaluate(() => Progress.get('49989'));
+  await page.evaluate(() => Player.play(_ytp, [_ytp], 0));
+  await page.waitForTimeout(500);
+  const ytSrc = await page.evaluate(() => document.querySelector('#embed iframe').src);
+  check('a YouTube video resumes where you left off', ytSaved && Math.round(ytSaved.position) === 40 && /start=40/.test(ytSrc), ytSrc);
+  await ytMessage({ playerState: 1, currentTime: 92, duration: 100 });
+  await key('Escape'); await page.waitForTimeout(300);
+  check('a YouTube video watched to near the end is marked Watched', await page.evaluate(() => (Watched.get('49989') || {}).how === 'watched' && !Progress.get('49989')));
+
+  await page.evaluate(() => Api.post('49991').then((p) => App.push(Views.post(p))));
+  await page.waitForTimeout(700);
+  const seen = await page.evaluate(() => ({ how: (Watched.get('49991') || {}).how, note: document.querySelector('.watched-note').textContent }));
+  check('opening a text post marks it Seen', seen.how === 'seen' && /Seen/.test(seen.note), JSON.stringify(seen));
+  await page.evaluate(() => Focus.set(Array.prototype.find.call(document.querySelectorAll('.post-actions .btn'), (b) => /Mark as/.test(b.textContent))));
+  await key('Enter'); await page.waitForTimeout(200);
+  const unmarked = await page.evaluate(() => ({ w: Watched.get('49991'), btn: Focus.current.textContent }));
+  await key('Enter'); await page.waitForTimeout(200);
+  const remarked = await page.evaluate(() => ({ how: (Watched.get('49991') || {}).how, btn: Focus.current.textContent }));
+  check('Mark as watched / not watched toggles by hand', !unmarked.w && /Mark as watched/.test(unmarked.btn) && remarked.how === 'watched' && /not watched/.test(remarked.btn),
+    JSON.stringify([unmarked, remarked]));
+  await key('Escape'); await page.waitForTimeout(300);
+
   // 13. Settings toggles persist.
   await page.evaluate(() => App.go('settings'));
   await page.waitForTimeout(300);
