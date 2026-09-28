@@ -11,6 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const fake = require('./fake-patreon');
+const mock = require('../tools/mock/mock.js'); // the stand-in site's sample data
 
 const ROOT = path.join(__dirname, '..');
 const OUT = process.argv[2] || path.join(ROOT, 'test', 'screens');
@@ -369,6 +370,32 @@ function check(name, ok, info) { results.push({ name, ok: !!ok, info }); console
   check('settings change and persist', (await page.evaluate(() => Store.settings().seekStep)) === 15);
   await shot('21-settings');
 
+  // 13b. A creator with hundreds of posts: only the rows near the screen are in the page, and the remote still moves
+  // exactly one row or column at a time, down through several pages and back up to the top.
+  mock.configure({ posts: 1200 });
+  await page.evaluate(() => App.go('creators'));
+  await page.waitForSelector('.creator-tile'); await page.waitForTimeout(400);
+  await page.evaluate(() => document.querySelector('.creator-tile').click());
+  await page.waitForSelector('.creator-page .grid .card'); await page.waitForTimeout(600);
+  const gridInfo = () => page.evaluate(() => {
+    const g = App.top().el.querySelector('.grid-wrap')._grid, cur = Focus.current, r = cur.getBoundingClientRect();
+    return { at: g.state.shown.indexOf(cur._post), loaded: g.state.shown.length, inPage: App.top().el.querySelectorAll('.grid .card').length, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  await page.evaluate(() => Focus.set(App.top().el.querySelector('.grid .card')));
+  await key('ArrowDown', 30);
+  const deep = await gridInfo();
+  await key('ArrowRight');
+  const right = await gridInfo();
+  await shot('17d-creator-many-posts');
+  check('many posts: Down moves one row at a time through several pages', deep.at === 120, JSON.stringify(deep));
+  check('many posts: only the rows near the screen are in the page', deep.loaded > 120 && deep.inPage <= 64, deep.inPage + ' of ' + deep.loaded);
+  check('many posts: the highlighted post stays on screen', deep.top >= 0 && deep.bottom <= 1080 && right.at === 121, JSON.stringify(right));
+  await key('ArrowLeft'); await key('ArrowUp', 30);
+  const back = await gridInfo();
+  await key('ArrowUp');
+  check('many posts: Up comes back to the first post, then the filters', back.at === 0 && back.top > 0 && /chip/.test(await page.evaluate(() => Focus.current.className)), JSON.stringify(back));
+  mock.configure({ posts: 60 });
+
   // 14. Relaunch keeps the session; Back at home asks to exit, and exit goes through the TV helper.
   await page.reload({ waitUntil: 'commit' }); await page.waitForTimeout(1500);
   check('relaunch skips sign-in', (await screenName()) === 'home');
@@ -432,6 +459,22 @@ function check(name, ok, info) { results.push({ name, ok: !!ok, info }); console
   const barMouse = await barOpacity();
   check('computer: the Back and pause buttons hide during a video and show when pointed at', barPlaying === '0' && barMouse === '1', barPlaying + ' / ' + barMouse);
   await pcPage.keyboard.press('Escape'); await pcPage.waitForTimeout(300);
+  // Wheel-scrolling a long list brings its posts into view (the app is zoomed to fit the window here).
+  mock.configure({ posts: 1200 });
+  await pcPage.evaluate(() => App.go('creators'));
+  await pcPage.waitForSelector('.creator-tile'); await pcPage.waitForTimeout(300);
+  await pcPage.evaluate(() => document.querySelector('.creator-tile').click());
+  await pcPage.waitForSelector('.creator-page .grid .card'); await pcPage.waitForTimeout(500);
+  await pcPage.mouse.move(640, 500);
+  for (let i = 0; i < 25; i++) { await pcPage.mouse.wheel(0, 700); await pcPage.waitForTimeout(80); }
+  await pcPage.waitForTimeout(500);
+  const wheel = await pcPage.evaluate(() => {
+    const onScreen = Array.prototype.filter.call(App.top().el.querySelectorAll('.grid .card'), (c) => { const r = c.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; });
+    return { onScreen: onScreen.length, scrolled: Math.round(App.top().el.scrollTop), loaded: App.top().el.querySelector('.grid-wrap')._grid.state.shown.length };
+  });
+  await pcPage.screenshot({ path: path.join(OUT, '24-computer-long-list.png') });
+  check('computer: wheel-scrolling a long list keeps posts on screen', wheel.onScreen >= 4 && wheel.scrolled > 5000, JSON.stringify(wheel));
+  mock.configure({ posts: 60 });
 
   check('no "[object Object]" on any screen', !seenObjectText.length, seenObjectText.join(' | '));
   check('no script errors', errors.length === 0, errors.slice(0, 5).join(' | '));

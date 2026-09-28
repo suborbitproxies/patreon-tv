@@ -68,7 +68,9 @@
     });
   });
 
-  // Infinite, filterable grid of posts.
+  // Infinite, filterable grid of posts. Only the rows within a screen of what's showing are in the page, with padding
+  // standing in for the rest, so a creator with thousands of posts is as quick to move around as one with fifty.
+  var GRID_PAD = 8; // .grid's own top and bottom padding
   function PostGrid(loader, opts) {
     opts = opts || {};
     var grid = h('div.grid');
@@ -76,6 +78,9 @@
     var wrap = h('div.grid-wrap', grid, status);
     var state = { items: [], shown: [], cursor: null, done: false, loading: false, filter: opts.filter || null, gen: 0 };
     var s = Store.settings();
+    var cards = {};               // index in shown -> card, for the posts in the grid now
+    var from = 0, to = 0;         // shown[from..to) are in the grid
+    var geo = null;               // { cols, pitch }: columns, and px from one row's top to the next
 
     function queue() { return state.shown; }
 
@@ -84,15 +89,65 @@
       return !state.filter || state.filter(p);
     }
 
-    function render(newItems) {
-      newItems.filter(accept).forEach(function (p) {
-        state.shown.push(p);
-        var c = postCard(p, queue);
-        c.addEventListener('tvfocus', function () {
-          if (state.shown.indexOf(p) >= state.shown.length - 8) more();
-        });
-        grid.appendChild(c);
+    // Cards are made as they come into view and dropped as they leave it, so thousands of posts don't pile up in memory.
+    function cardAt(i) {
+      if (cards[i]) return cards[i];
+      var p = state.shown[i];
+      var c = cards[i] = postCard(p, queue);
+      c.addEventListener('tvfocus', function () {
+        if (state.shown.indexOf(p) >= state.shown.length - 8) more();
+        fit();
       });
+      return c;
+    }
+
+    // Measures columns and row height from the rows in the page (every card is the same size).
+    function measure() {
+      var kids = grid.children;
+      if (!kids.length) return;
+      var top = kids[0].offsetTop, cols = 1;
+      while (cols < kids.length && kids[cols].offsetTop === top) cols++;
+      if (cols < kids.length) geo = { cols: cols, pitch: kids[cols].offsetTop - top };
+    }
+
+    // Puts the posts near the screen into the grid and sizes the padding for the rest.
+    function fit() {
+      var n = state.shown.length, sc = grid.closest('.scroll-y'), view = sc ? sc.clientHeight : 0;
+      if (grid.children.length) measure();
+      if (grid.children.length && !view) return; // hidden under another screen: leave it until it shows again
+      var cols = geo ? geo.cols : 1, pitch = geo ? geo.pitch : 0;
+      var a = 0, b = Math.min(n, 48), i;
+      if (geo && view) {
+        // Offsets rather than screen rects: they ignore the zoom used in a browser and the highlighted card's scaling.
+        var y = GRID_PAD;
+        for (var e = grid; e && e !== sc; e = e.offsetParent) y += e.offsetTop;
+        var first = Math.floor((sc.scrollTop - y) / pitch), rows = Math.ceil(view / pitch);
+        a = Math.max(0, first - rows - 1) * cols;
+        b = Math.min(n, Math.max(0, first + 2 * rows + 2) * cols);
+        // While the rows on screen, and one either side, are already in, leave them: the grid changes a screen at a time.
+        if (grid.children.length && from <= Math.max(0, first - 1) * cols && to >= Math.min(n, (first + rows + 1) * cols)) { a = from; b = to; }
+      }
+      if (a !== from || b !== to || grid.children.length !== b - a) {
+        for (i = from; i < to; i++) {
+          if ((i >= a && i < b) || !cards[i]) continue;
+          if (cards[i].parentNode === grid) grid.removeChild(cards[i]);
+          delete cards[i];
+        }
+        var next = null;
+        for (i = b - 1; i >= a; i--) {
+          var c = cardAt(i);
+          if (c.parentNode !== grid || c.nextSibling !== next) grid.insertBefore(c, next);
+          next = c;
+        }
+        from = a; to = b;
+      }
+      grid.style.paddingTop = (GRID_PAD + Math.floor(a / cols) * pitch) + 'px';
+      grid.style.paddingBottom = (GRID_PAD + (Math.ceil(n / cols) - Math.ceil(b / cols)) * pitch) + 'px';
+    }
+
+    function render(newItems) {
+      newItems.filter(accept).forEach(function (p) { state.shown.push(p); });
+      fit();
     }
 
     function more(auto) {
@@ -124,18 +179,23 @@
       });
     }
 
-    // With a mouse or touch screen, scrolling near the end loads more too.
-    document.addEventListener('scroll', function (e) {
+    // Scrolling (with the remote, a mouse or a touch screen) swaps in the posts that come into view, and near the end
+    // loads more. The listener goes once the grid has left the page.
+    function onScroll(e) {
+      if (!document.body.contains(wrap)) { document.removeEventListener('scroll', onScroll, true); return; }
       var sc = e.target;
-      if (!sc.contains || !sc.contains(wrap) || state.loading || state.done) return;
-      if (sc.scrollTop + sc.clientHeight > sc.scrollHeight - 600) more();
-    }, true);
+      if (!sc.contains || !sc.contains(wrap)) return;
+      fit();
+      if (!state.loading && !state.done && sc.scrollTop + sc.clientHeight > sc.scrollHeight - 600) more();
+    }
+    document.addEventListener('scroll', onScroll, true);
 
     function setFilter(f) {
       state.filter = f;
       state.gen++;
       state.loading = false;
       state.shown = [];
+      cards = {}; from = to = 0;
       U.clear(grid);
       render(state.items);
       if (state.shown.length < 8 && !state.done) return more(1);
@@ -144,7 +204,8 @@
       return Promise.resolve();
     }
 
-    return { el: wrap, more: more, setFilter: setFilter, state: state, queue: queue };
+    wrap._grid = { el: wrap, more: more, setFilter: setFilter, state: state, queue: queue };
+    return wrap._grid;
   }
 
   var FILTERS = [

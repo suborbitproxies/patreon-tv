@@ -52,6 +52,58 @@
     return null;
   }
 
+  // A creator's posts can fill a grid with thousands of cards, so a key press must not measure every one of them.
+  function usable(el) {
+    if (el.disabled || el.classList.contains('hidden')) return false;
+    var r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && el.offsetParent !== null;
+  }
+  function isCandidate(el) {
+    return !!el && el.classList.contains('focusable') && (Focus.root || document.body).contains(el) && usable(el);
+  }
+  function isGridItem(el) {
+    var p = el.parentNode;
+    return !!(p && p.classList && p.classList.contains('grid'));
+  }
+
+  // Inside a grid, the next card is found from its place in the list: the first cards share a row, which gives the columns.
+  function gridStep(cur, dir) {
+    var kids = cur.parentNode.children, n = kids.length;
+    var i = Array.prototype.indexOf.call(kids, cur), top = kids[0].offsetTop, cols = 1, t = -1;
+    while (cols < n && kids[cols].offsetTop === top) cols++;
+    if (dir === 'left') t = i % cols ? i - 1 : -1;
+    else if (dir === 'right') t = i % cols < cols - 1 && i + 1 < n ? i + 1 : -1;
+    else if (dir === 'up') t = i - cols;
+    else if (i + cols < n) t = i + cols;
+    else if (Math.floor(i / cols) < Math.floor((n - 1) / cols)) t = n - 1; // down into a shorter last row
+    var el = t >= 0 ? kids[t] : null;
+    return el && el.classList.contains('focusable') && usable(el) ? el : null;
+  }
+
+  // Focusable elements to consider for a move from rect r: all of them, except that a grid only offers the cards
+  // within a screen and a half of r (found by binary search, since its rows run down the page in order).
+  function nearCandidates(r) {
+    var all = (Focus.root || document.body).getElementsByClassName('focusable');
+    var out = [], grids = [], el, i;
+    for (i = 0; i < all.length; i++) {
+      el = all[i];
+      if (isGridItem(el)) { if (grids[grids.length - 1] !== el.parentNode) grids.push(el.parentNode); }
+      else if (usable(el)) out.push(el);
+    }
+    var reach = (window.innerHeight || 1080) * 1.5, from = r.top - reach, to = r.bottom + reach;
+    grids.forEach(function (g) {
+      if (g.offsetParent === null) return;
+      var kids = g.children, lo = 0, hi = kids.length, mid;
+      while (lo < hi) { mid = (lo + hi) >> 1; if (kids[mid].getBoundingClientRect().bottom < from) lo = mid + 1; else hi = mid; }
+      for (i = lo; i < kids.length; i++) {
+        el = kids[i];
+        if (el.getBoundingClientRect().top > to) break;
+        if (el.classList.contains('focusable') && usable(el)) out.push(el);
+      }
+    });
+    return out;
+  }
+
   var Focus = {
     root: null,      // container that limits navigation (a screen or a modal)
     current: null,
@@ -60,11 +112,7 @@
 
     candidates: function () {
       var root = Focus.root || document.body;
-      return Array.prototype.filter.call(root.querySelectorAll('.focusable'), function (el) {
-        if (el.disabled || el.classList.contains('hidden')) return false;
-        var r = el.getBoundingClientRect();
-        return r.width > 0 && r.height > 0 && el.offsetParent !== null;
-      });
+      return Array.prototype.filter.call(root.getElementsByClassName('focusable'), usable);
     },
 
     set: function (el, opts) {
@@ -110,16 +158,15 @@
     },
 
     first: function (selector) {
-      var list = Focus.candidates();
       var el = selector ? (Focus.root || document).querySelector(selector) : null;
-      if (el && list.indexOf(el) >= 0) { Focus.set(el); return true; }
-      if (list.length) { Focus.set(list[0]); return true; }
+      if (isCandidate(el)) { Focus.set(el); return true; }
+      var all = (Focus.root || document.body).getElementsByClassName('focusable');
+      for (var i = 0; i < all.length; i++) if (usable(all[i])) { Focus.set(all[i]); return true; }
       return false;
     },
 
     ensure: function () {
-      var list = Focus.candidates();
-      if (!Focus.current || list.indexOf(Focus.current) < 0) Focus.first();
+      if (!isCandidate(Focus.current)) Focus.first();
     },
 
     moves: 0,
@@ -127,13 +174,27 @@
     move: function (dir) {
       Focus.moves++;
       var cur = Focus.current;
-      var list = Focus.candidates();
-      if (!cur || list.indexOf(cur) < 0) { Focus.first(); return true; }
+      if (!isCandidate(cur)) { Focus.first(); return true; }
       var group = cur.closest('[data-nav-group]');
+      var best = isGridItem(cur) ? gridStep(cur, dir) : null;
+      if (!best) best = Focus.nearest(cur, dir, group);
+      if (best) {
+        // When entering a remembered group (e.g. the sidebar or a row), restore its last focused item.
+        var g = best.closest('[data-nav-group]');
+        if (g && g !== group && g.dataset.remember && g._last && isCandidate(g._last) && !best.dataset.direct) best = g._last;
+        if (g && g.dataset.navGroup !== 'chips') g._last = best;
+        Focus.set(best);
+        return true;
+      }
+      return false;
+    },
+
+    // The closest element in direction dir, by position on screen.
+    nearest: function (cur, dir, group) {
       var r = cur.getBoundingClientRect();
       var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
       var best = null, bestScore = Infinity;
-      list.forEach(function (el) {
+      nearCandidates(r).forEach(function (el) {
         if (el === cur) return;
         var o = el.getBoundingClientRect();
         var ox = o.left + o.width / 2, oy = o.top + o.height / 2;
@@ -155,15 +216,7 @@
         if (group && el.closest('[data-nav-group]') === group) score *= (dir === 'left' || dir === 'right') && overlap > 0 ? 0.2 : 0.8;
         if (score < bestScore) { bestScore = score; best = el; }
       });
-      if (best) {
-        // When entering a remembered group (e.g. the sidebar or a row), restore its last focused item.
-        var g = best.closest('[data-nav-group]');
-        if (g && g !== group && g.dataset.remember && g._last && list.indexOf(g._last) >= 0 && !best.dataset.direct) best = g._last;
-        if (g && g.dataset.navGroup !== 'chips') g._last = best;
-        Focus.set(best);
-        return true;
-      }
-      return false;
+      return best;
     }
   };
 

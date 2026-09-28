@@ -33,13 +33,18 @@ function campaignRes(c) {
   }, relationships: { rewards: { data: [1, 2, 3].map((i) => ({ type: 'reward', id: c.id + '-r' + i })) }, creator: { data: { type: 'user', id: 'u' + c.id } } } };
 }
 
-// 60 posts, newest first.
+// 60 posts, newest first (configure({ posts }) makes more, e.g. for the speed test).
 const POSTS = [];
-for (let i = 0; i < 60; i++) {
-  const c = CAMPAIGNS[i % CAMPAIGNS.length];
-  const type = TYPES[i % TYPES.length];
-  POSTS.push({ n: i, id: String(50000 - i), campaign: c, type, locked: i % 7 === 5, published: new Date(Date.UTC(2026, 8, 25, 12) - i * 36e5 * 20).toISOString() });
+function makePosts(count) {
+  POSTS.length = 0;
+  for (let i = 0; i < count; i++) {
+    const c = CAMPAIGNS[i % CAMPAIGNS.length];
+    const type = TYPES[i % TYPES.length];
+    POSTS.push({ n: i, id: String(50000 - i), campaign: c, type, locked: i % 7 === 5, published: new Date(Date.UTC(2026, 8, 25, 12) - i * 36e5 * 20).toISOString() });
+  }
 }
+makePosts(60);
+let pageSize = 12;
 
 function postRes(p, included) {
   const id = p.id;
@@ -97,7 +102,7 @@ function postRes(p, included) {
 function postsDoc(list, reqUrl) {
   const u = new URL(reqUrl, 'http://x');
   const cursor = parseInt(u.searchParams.get('page[cursor]') || '0', 10) || 0;
-  const page = list.slice(cursor, cursor + 12);
+  const page = list.slice(cursor, cursor + pageSize);
   const included = [];
   const data = page.map((p) => postRes(p, included));
   const camps = new Set(page.map((p) => p.campaign.id));
@@ -105,7 +110,7 @@ function postsDoc(list, reqUrl) {
     included.push(campaignRes(c));
     included.push({ type: 'user', id: 'u' + c.id, attributes: { full_name: c.name, image_url: img('a' + c.id, 200, 200) } });
   });
-  const next = cursor + 12 < list.length ? String(cursor + 12) : null;
+  const next = cursor + pageSize < list.length ? String(cursor + pageSize) : null;
   u.searchParams.set('page[cursor]', next || '');
   return { data, included, meta: { pagination: { cursors: { next } } }, links: next ? { next: 'https://www.patreon.com' + u.pathname + '?' + u.searchParams.toString() } : {} };
 }
@@ -216,5 +221,11 @@ function wav() {
   return (toneBytes = new Uint8Array(buf));
 }
 
-return { handle, svg, wav, configure: (o) => Object.assign(urls, o) };
+function configure(o) {
+  if (o.posts) makePosts(o.posts);
+  if (o.pageSize) pageSize = o.pageSize;
+  ['img', 'video', 'audio'].forEach((k) => { if (o[k]) urls[k] = o[k]; });
+}
+
+return { handle, svg, wav, configure };
 });

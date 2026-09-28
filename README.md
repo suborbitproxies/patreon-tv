@@ -15,7 +15,8 @@ Not made or endorsed by Patreon.
   can be marked watched or not by hand. This is kept on each TV (or browser) separately.
 - **Your creators**: every membership, with your tier price.
 - **Creator pages**: cover, description, membership tiers, all posts filtered by type and sorted newest or oldest
-  first, and collections (in the creator's order, or by date).
+  first, and collections (in the creator's order, or by date). Only the posts near the screen are kept on the page, so
+  moving around a creator with thousands of posts is as quick as one with fifty.
 - **Posts**: full text with images, image galleries with a full-screen viewer and zoom, polls with results,
   attachments, tags, and locked posts showing which tier unlocks them.
 - **Video player**: Patreon's HLS and MP4 video, seek with ◀ ▶, remote media keys, auto-play next, resume.
@@ -138,6 +139,7 @@ tools/
   mock/              sample Patreon data and media
 test/
   e2e.js             the app driven by remote keys inside a stand-in patreon.com
+  perf.js            how long a key press takes on a creator with many posts, on a slowed-down CPU
   helper-test.js     the helper against a stand-in TV (sdbd, Developer Mode API, Tizen APIs, update site) and Chromium
   fake-patreon.js    the stand-in patreon.com
 ```
@@ -151,6 +153,7 @@ the app starts. If the app needs something only a newer helper does, raise `MIN_
 Tests (need Playwright; `NODE_PATH` pointing at a global install works): `node test/e2e.js` and
 `node test/helper-test.js`. They cover sign-in on Patreon's page with the remote, navigation, filters, paging,
 video and audio playback, seeking, resume, likes and comments with Patreon's CSRF signature, video Referer,
-galleries, locked posts, polls, creators, tiers, collections, search, settings, YouTube and Vimeo links, Patreon's
+galleries, locked posts, polls, creators (one with hundreds of posts), tiers, collections, search, settings, YouTube and Vimeo links, Patreon's
 bot check, sign-out and session expiry, the Chrome add-on's tab switch, and the helper's Developer Mode check,
-debugger relaunch, injection, updates, desktop-Chrome user agent, YouTube hand-off and exit.
+debugger relaunch, injection, updates, desktop-Chrome user agent, YouTube hand-off and exit. `node test/perf.js`
+prints the time per key press with 200, 400 and 1,500 posts loaded.

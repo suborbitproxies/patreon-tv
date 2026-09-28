@@ -34,6 +34,7 @@ function sendBuffer(req, res, buf, type) {
 function start(port, opts) {
   opts = opts || {};
   const state = { apiCalls: [], mutations: [], mediaReferers: [], challengeOnce: false };
+  if (opts.posts || opts.pageSize) mock.configure({ posts: opts.posts, pageSize: opts.pageSize });
   const server = http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x');
     const p = u.pathname;
