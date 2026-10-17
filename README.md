@@ -19,7 +19,9 @@ Not made or endorsed by Patreon.
   moving around a creator with thousands of posts is as quick as one with fifty.
 - **Posts**: full text with images, image galleries with a full-screen viewer and zoom, polls with results,
   attachments, tags, and locked posts showing which tier unlocks them.
-- **Video player**: Patreon's HLS and MP4 video, seek with ◀ ▶, remote media keys, auto-play next, resume.
+- **Video player**: Patreon's HLS and MP4 video, seek with ◀ ▶, remote media keys, auto-play next, resume. Next
+  and previous follow the list you started from in the order it's shown (oldest first included), YouTube and Vimeo
+  posts taking their turn.
 - **Audio player**: keeps playing in the background with a now-playing bar while you browse.
 - **YouTube and Vimeo** videos play inside the app, whether the creator embedded them or just pasted a link in the
   text. A post with several links lists them under "Videos in this post". If a YouTube video refuses to play outside

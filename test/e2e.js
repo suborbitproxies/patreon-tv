@@ -362,6 +362,42 @@ function check(name, ok, info) { results.push({ name, ok: !!ok, info }); console
     JSON.stringify([unmarked, remarked]));
   await key('Escape'); await page.waitForTimeout(300);
 
+  // 12d. Autoplay follows the order on screen: with a creator sorted oldest first, the end of a Patreon video plays the
+  // next post down the list, YouTube posts included, and the end of a YouTube post goes on to the one after it.
+  await page.evaluate(() => App.go('creators'));
+  await page.waitForSelector('.creator-tile'); await page.waitForTimeout(300);
+  await page.evaluate(() => Array.prototype.find.call(document.querySelectorAll('.creator-tile'), (t) => /Pixel Kitchen/.test(t.textContent)).click());
+  await page.waitForSelector('.creator-page .grid .card'); await page.waitForTimeout(500);
+  if (!/Oldest/.test(await page.textContent('.chip-sort'))) { await page.evaluate(() => document.querySelector('.chip-sort').click()); await page.waitForTimeout(800); }
+  const plan = await page.evaluate(() => {
+    const shown = App.top().el.querySelector('.grid-wrap')._grid.state.shown;
+    const ok = (p) => p.canView && (p.video || (p.embed && p.embed.player));
+    const nextOk = (from) => shown.findIndex((p, i) => i > from && ok(p));
+    // A Patreon video whose next playable post is a YouTube one, with another after that.
+    const v = shown.findIndex((p, i) => p.video && p.canView && nextOk(i) > 0 && !shown[nextOk(i)].video && nextOk(nextOk(i)) > 0);
+    const e = nextOk(v), after = nextOk(e);
+    const card = Array.prototype.find.call(App.top().el.querySelectorAll('.grid .card'), (c) => c._post === shown[v]);
+    Focus.set(card);
+    return { v: shown[v].title, e: shown[e].title, eIsYouTube: !shown[e].video && !!shown[e].embed, after: shown[after].title, sort: document.querySelector('.chip-sort').textContent };
+  });
+  await key('Enter'); await page.waitForTimeout(700);
+  await key('Enter'); await page.waitForTimeout(1200);
+  const first = await page.evaluate(() => Player.watching() && Player.watching().title);
+  await page.evaluate(() => document.querySelector('#player video').dispatchEvent(new Event('ended')));
+  await page.waitForTimeout(700);
+  const second = await page.evaluate(() => ({ title: Player.watching() && Player.watching().title, active: Player.active }));
+  await ytMessage({ playerState: 1, currentTime: 98, duration: 100 });
+  await ytMessage({ playerState: 0, currentTime: 100, duration: 100 });
+  await page.waitForTimeout(700);
+  const third = await page.evaluate(() => Player.watching() && Player.watching().title);
+  await page.evaluate(() => App.dispatch('prev')); await page.waitForTimeout(500);
+  const prevPost = await page.evaluate(() => ({ title: Player.watching() && Player.watching().title, active: Player.active }));
+  check('oldest first: a finished video plays the next post down, YouTube included', /Oldest/.test(plan.sort) && first === plan.v && plan.eIsYouTube && second.title === plan.e && second.active === 'embed',
+    JSON.stringify([plan, first, second]));
+  check('oldest first: a finished YouTube post goes on to the next post down, and previous goes back', third === plan.after && prevPost.title === plan.e && prevPost.active === 'embed', JSON.stringify([third, prevPost]));
+  await key('Escape'); await page.waitForTimeout(300);
+  await key('Escape'); await page.waitForTimeout(300);
+
   // 13. Settings toggles persist.
   await page.evaluate(() => App.go('settings'));
   await page.waitForTimeout(300);

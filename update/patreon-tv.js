@@ -43,7 +43,7 @@
   takeOver();
   addStyle("/* Designed for a 1920x1080 canvas viewed from the couch. */\n:root {\n  --bg: #0f0f12;\n  --bg2: #18181d;\n  --bg3: #24242b;\n  --text: #f4f2ef;\n  --muted: #a3a0a8;\n  --accent: #ff5a4a;\n  --accent2: #ff8a5c;\n  --focus: #ffffff;\n  --radius: 16px;\n  --side: 110px;\n  --side-open: 330px;\n}\n\n* { box-sizing: border-box; }\nhtml, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--text);\n  font-family: \"SamsungOne\", \"Samsung Sharp Sans\", \"Helvetica Neue\", Arial, sans-serif; font-size: 28px; line-height: 1.4; }\nh1 { font-size: 56px; margin: 0 0 8px; line-height: 1.15; }\nh2 { font-size: 36px; margin: 0 0 20px; }\nh3 { font-size: 30px; margin: 0 0 10px; }\np { margin: 0 0 14px; }\n.muted { color: var(--muted); }\n.lead { font-size: 30px; color: #d9d6dc; }\n.error { color: #ff8f86; }\n.hidden { display: none !important; }\n\n/* ---------- shell ---------- */\n.shell { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; }\n.main { position: absolute; top: 0; bottom: 0; left: var(--side); right: 0; overflow: hidden; }\n.no-sidebar .main { left: 0; }\n.screen { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }\n.scroll-y { overflow-y: hidden; overflow-x: hidden; }\n\n.sidebar { position: absolute; left: 0; top: 0; width: var(--side); height: 1080px; background: linear-gradient(to right, #0a0a0c, #0f0f12); padding: 40px 0; display: flex;\n  flex-direction: column; z-index: 5; transition: width .18s ease; overflow: hidden; flex-shrink: 0; }\n.brand { display: flex; align-items: center; gap: 18px; padding: 0 27px 40px; white-space: nowrap; }\n.brand-mark { width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 800; font-size: 32px;\n  display: flex; align-items: center; justify-content: center; flex-shrink: 0; }\n.brand-mark.big { width: 110px; height: 110px; font-size: 64px; }\n.brand-mark .icon { width: 55%; height: 55%; margin-left: 8%; }\n.brand-name { font-weight: 700; font-size: 30px; }\n.nav-item { display: flex; align-items: center; gap: 26px; margin: 6px 14px; padding: 16px 22px; border-radius: 14px; white-space: nowrap; color: var(--muted); }\n.nav-icon { width: 38px; text-align: center; font-size: 34px; flex-shrink: 0; }\n.nav-item.active { color: var(--text); }\n.nav-item.active .nav-icon { color: var(--accent); }\n.nav-spacer { flex: 1; }\n.nav-user { display: flex; align-items: center; gap: 18px; padding: 0 27px; white-space: nowrap; }\n.nav-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--bg3) center/cover; flex-shrink: 0; }\n.nav-username { color: var(--muted); font-size: 24px; }\n/* Hide labels when collapsed, but not with display:none so geometry stays stable. */\n.sidebar:not(.focus-in) .nav-label, .sidebar:not(.focus-in) .brand-name, .sidebar:not(.focus-in) .nav-username { opacity: 0; }\n.sidebar.focus-in { width: var(--side-open); box-shadow: 30px 0 60px rgba(0,0,0,.7); }\n\n/* ---------- focus ---------- */\n.focusable { outline: none; transition: transform .12s ease, box-shadow .12s ease, background-color .12s; }\n.focused { box-shadow: 0 0 0 5px var(--focus), 0 12px 40px rgba(0, 0, 0, .6); }\n.nav-item.focused { background: var(--text); color: #111; box-shadow: none; }\n.nav-item.focused .nav-icon { color: #111; }\n.card.focused { transform: scale(1.05); z-index: 2; }\n.creator-tile.focused { transform: scale(1.06); }\n\n/* ---------- pages ---------- */\n.page { padding: 56px 72px 0 60px; }\n.page-head { margin-bottom: 28px; }\n.page-end { height: 120px; }\n.section { margin-bottom: 44px; }\n.section-head { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 24px; }\n.section-head h2 { margin: 0 0 18px; }\n.section-head.sticky { margin-top: 12px; }\n\n.chips { display: flex; gap: 14px; flex-wrap: wrap; }\n.chip { padding: 10px 26px; border-radius: 999px; background: var(--bg3); color: var(--muted); font-size: 26px; }\n.chip.active { background: var(--text); color: #111; }\n.chip.focused { box-shadow: 0 0 0 4px var(--accent); }\n.chip-sort { margin-left: auto; color: var(--text); }\n.chips .chip-sort:first-child { margin-left: 0; }\n.section-head > .chips { align-self: stretch; }\n\n/* ---------- cards ---------- */\n.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px 32px; padding: 8px 4px; }\n.grid.creators { grid-template-columns: repeat(6, 1fr); }\n.grid-status { padding: 20px 0 80px; }\n/* Each card keeps its own layer and layout, so highlighting one never re-lays out the whole grid. */\n.card { background: var(--bg2); border-radius: var(--radius); overflow: hidden; position: relative; z-index: 0; contain: content; }\n.card-thumb { position: relative; padding-top: 56.25%; background: var(--bg3) center/cover no-repeat; }\n.card-kind-big { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; font-size: 80px; color: #55535b; }\n.badge { position: absolute; left: 14px; bottom: 14px; background: rgba(0, 0, 0, .75); padding: 4px 14px; border-radius: 8px; font-size: 22px; }\n.card-body { padding: 16px 20px 20px; }\n.card-title { font-weight: 700; font-size: 27px; line-height: 1.25; height: 2.5em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }\n.card-meta { display: flex; align-items: center; gap: 12px; margin-top: 10px; font-size: 22px; color: var(--muted); white-space: nowrap; overflow: hidden; }\n.card-meta > span:not(.mini-avatar):not(.meta-count) { overflow: hidden; text-overflow: ellipsis; min-width: 0; }\n.meta-count { margin-left: auto; flex-shrink: 0; }\n.meta-count + .meta-count { margin-left: 0; }\n.mini-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--bg3) center/cover; flex-shrink: 0; }\n.card-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: rgba(255, 255, 255, .2); }\n.card-progress div { height: 100%; background: var(--accent); }\n.card.locked .card-thumb { filter: saturate(.3) brightness(.55); }\n.card.watched .card-thumb::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0, 0, 0, .5); }\n.card.watched .card-title { color: var(--muted); }\n.badge-watched { position: absolute; top: 14px; right: 14px; z-index: 1; background: rgba(20, 20, 24, .85); color: var(--text);\n  padding: 4px 14px 4px 10px; border-radius: 8px; font-size: 22px; }\n.card.watched .badge, .card.watched .card-progress { z-index: 1; }\n.watched-note:not(:empty) { margin-left: 18px; color: var(--text); }\n.lock { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 56px; filter: none; }\n.lock small { font-size: 24px; margin-top: 6px; }\n.nsfw .card-thumb, .nsfw .avatar, .post-hero.nsfw { filter: blur(24px); }\n.row-scroll { display: flex; gap: 28px; overflow: hidden; padding: 12px 6px 18px; }\n.row-scroll .card { flex: 0 0 380px; }\n.card.small .card-title { height: auto; -webkit-line-clamp: 1; }\n\n.creator-tile { text-align: center; padding: 22px 12px; border-radius: var(--radius); background: var(--bg2); position: relative; z-index: 0; }\n.avatar { width: 150px; height: 150px; border-radius: 50%; margin: 0 auto 16px; background: var(--bg3) center/cover no-repeat;\n  display: flex; align-items: center; justify-content: center; font-size: 60px; font-weight: 700; color: var(--muted); }\n.avatar.large { width: 190px; height: 190px; margin: 0; flex-shrink: 0; border: 5px solid var(--bg); }\n.avatar.small { width: 64px; height: 64px; margin: 0; flex-shrink: 0; }\n.creator-name { font-weight: 700; font-size: 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }\n.creator-sub { font-size: 22px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }\n\n/* ---------- creator page ---------- */\n.creator-page { padding-top: 0; }\n.creator-hero { margin: 0 -72px 20px -60px; padding: 180px 72px 30px 60px; background: var(--bg2) center/cover no-repeat; }\n.creator-hero-inner { display: flex; align-items: flex-end; gap: 40px; }\n.creator-hero-text { flex: 1; }\n\n/* ---------- buttons, inputs ---------- */\n.btn-row { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 22px; }\n.btn { padding: 16px 36px; border-radius: 12px; background: var(--accent); color: #fff; font-weight: 700; font-size: 28px; white-space: nowrap; }\n.btn.secondary { background: var(--bg3); color: var(--text); font-weight: 500; }\n.btn.on { color: var(--accent2); }\n.btn.focused { background: var(--text); color: #111; box-shadow: 0 0 0 4px var(--accent); }\n.btn.busy { opacity: .5; }\n.link-btn { display: inline-block; padding: 8px 16px; border-radius: 10px; color: var(--accent2); margin: 8px 0 0 80px; }\n.field { display: block; margin: 18px 0; }\n.field > span { display: block; color: var(--muted); font-size: 24px; margin-bottom: 8px; }\n.input { width: 100%; padding: 18px 24px; font-size: 30px; border-radius: 12px; border: 3px solid var(--bg3); background: var(--bg2); color: var(--text); font-family: inherit; }\n.input.focused { border-color: var(--focus); box-shadow: none; }\n.input:focus { border-color: var(--accent); }\n.compose { display: flex; gap: 20px; align-items: center; margin-bottom: 36px; }\n.compose .input { flex: 1; }\n\n/* ---------- login ---------- */\n.login { display: flex; align-items: flex-start; justify-content: center; padding: 70px 0; }\n.login-card { width: 1180px; background: var(--bg2); border-radius: 28px; padding: 56px 70px; }\n.login-head { display: flex; align-items: center; gap: 36px; margin-bottom: 30px; }\n.tabs { display: flex; gap: 14px; margin: 16px 0 26px; }\n.tab { padding: 14px 30px; border-radius: 12px; background: var(--bg3); color: var(--muted); }\n.tab.active { color: var(--text); box-shadow: inset 0 -4px 0 var(--accent); }\n.tab.focused { background: var(--text); color: #111; }\n.login-status { margin-top: 28px; }\n.splash { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px; height: 100%; }\n.splash-msg { font-size: 30px; color: var(--muted); max-width: 1100px; text-align: center; }\n.tips, .steps { font-size: 28px; line-height: 1.5; color: #d9d6dc; padding-left: 40px; margin: 20px 0 30px; }\n.tips li, .steps li { margin: 10px 0; }\n.launch-wait { display: flex; align-items: center; gap: 30px; font-size: 32px; margin: 30px 0; }\n.launch-wait .loading { margin: 0; }\n\n/* ---------- post page ---------- */\n.post-top { display: flex; gap: 48px; margin-bottom: 36px; }\n.post-hero { position: relative; width: 960px; height: 540px; flex-shrink: 0; border-radius: 20px; background: var(--bg3) center/cover no-repeat; overflow: hidden; }\n.hero-play { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; font-size: 120px; color: #fff; text-shadow: 0 6px 30px rgba(0,0,0,.7); }\n.hero-lock { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0, 0, 0, .7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px; }\n.lock-icon { font-size: 90px; }\n.post-side { flex: 1; min-width: 0; display: flex; flex-direction: column; }\n.post-side h1 { font-size: 46px; }\n.post-actions { margin-top: auto; }\n.tags { display: flex; flex-wrap: wrap; gap: 10px; }\n.tag { color: var(--accent2); font-size: 24px; }\n.thumbs .thumb { flex: 0 0 260px; height: 160px; border-radius: 12px; background: var(--bg3) center/cover; }\n.rich { font-size: 30px; line-height: 1.6; max-width: 1400px; color: #e8e5ea; padding: 12px 16px; border-radius: 12px; }\n.rich img { max-width: 100%; border-radius: 12px; margin: 12px 0; display: block; }\n.rich a { color: var(--accent2); }\n.rich figure { margin: 0; }\n.rich blockquote { border-left: 5px solid var(--bg3); margin: 0; padding-left: 24px; color: var(--muted); }\n.post-text.focused { box-shadow: 0 0 0 3px rgba(255,255,255,.35); }\n.link-card { background: var(--bg2); border-radius: 16px; padding: 24px 30px; margin-bottom: 36px; max-width: 1400px; }\n.link-title { font-weight: 700; font-size: 30px; }\n.attachments { display: flex; flex-direction: column; gap: 12px; max-width: 1200px; }\n.attachment { display: flex; gap: 20px; align-items: center; padding: 18px 24px; background: var(--bg2); border-radius: 12px; }\n.att-icon { width: 40px; text-align: center; color: var(--accent2); }\n.poll-choice { position: relative; max-width: 1200px; padding: 18px 26px; margin-bottom: 12px; border-radius: 12px; background: var(--bg2); overflow: hidden; display: flex; justify-content: space-between; }\n.poll-bar { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255, 90, 74, .25); }\n.poll-choice.mine .poll-bar { background: rgba(255, 90, 74, .5); }\n.poll-text, .poll-pct { position: relative; }\n\n/* ---------- comments ---------- */\n.comment { margin-bottom: 18px; max-width: 1500px; }\n.comment-main { display: flex; gap: 22px; padding: 18px 22px; border-radius: 14px; background: var(--bg2); }\n.comment.reply { margin: 12px 0 0 86px; }\n.comment-head { font-size: 24px; margin-bottom: 4px; }\n.comment-body { white-space: pre-wrap; word-break: break-word; }\n.creator-badge { background: var(--accent); color: #fff; font-size: 18px; padding: 2px 10px; border-radius: 6px; margin-left: 12px; }\n\n/* ---------- settings ---------- */\n.setting { display: flex; align-items: center; justify-content: space-between; gap: 30px; max-width: 1300px; padding: 22px 30px; margin-bottom: 12px; border-radius: 14px; background: var(--bg2); }\n.setting.danger .setting-label { color: #ff8f86; }\n.setting-value { color: var(--accent2); }\n.switch { width: 84px; height: 46px; border-radius: 23px; background: var(--bg3); position: relative; flex-shrink: 0; }\n.switch::after { content: ''; position: absolute; left: 6px; top: 6px; width: 34px; height: 34px; border-radius: 50%; background: var(--muted); transition: left .15s; }\n.switch.on { background: var(--accent); }\n.switch.on::after { left: 44px; background: #fff; }\n.help-grid { display: grid; grid-template-columns: 200px 1fr; gap: 10px 30px; max-width: 1100px; }\n.help-grid div:nth-child(odd) { font-weight: 700; color: var(--accent2); }\n\n/* ---------- modals ---------- */\n.modal-backdrop { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0, 0, 0, .75); z-index: 50; display: flex; align-items: center; justify-content: center; }\n.modal { background: var(--bg2); border-radius: 24px; padding: 50px 60px; min-width: 760px; max-width: 1000px; max-height: 960px; overflow: hidden; display: flex; flex-direction: column; }\n.modal.wide { max-width: 1500px; }\n.scrollbox { overflow: hidden; max-height: 620px; }\n.qr-wrap { display: flex; gap: 44px; align-items: center; }\n.qr { background: #fff; padding: 18px; border-radius: 16px; width: 380px; height: 380px; flex-shrink: 0; }\n.qr svg { width: 100%; height: 100%; display: block; }\n.qr-side { max-width: 700px; }\n.url { color: var(--accent2); word-break: break-all; font-size: 24px; }\n.tiers { display: flex; flex-direction: column; gap: 14px; overflow: hidden; max-height: 700px; }\n.tier { padding: 20px 26px; border-radius: 14px; background: var(--bg3); }\n.tier.mine { box-shadow: inset 5px 0 0 var(--accent); }\n.tier-price { color: var(--accent2); font-weight: 700; }\n.tier-title { font-weight: 700; font-size: 30px; }\n.tier-desc { font-size: 24px; }\n.modal-backdrop.fullscreen { background: #000; }\n.modal-backdrop.fullscreen .modal { background: none; padding: 0; max-width: none; max-height: none; width: 1920px; height: 1080px; border-radius: 0; }\n.viewer { width: 1920px; height: 1080px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }\n.viewer-img { max-width: 1920px; max-height: 1080px; object-fit: contain; transition: transform .2s; }\n.viewer-cap { position: absolute; bottom: 30px; left: 0; right: 0; text-align: center; color: var(--muted); text-shadow: 0 2px 8px #000; }\n\n/* ---------- player ---------- */\n.overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 40; background: #000; }\n.player video { width: 100%; height: 100%; background: #000; }\n.player-chrome { position: absolute; top: 0; right: 0; bottom: 0; left: 0; opacity: 0; transition: opacity .25s; pointer-events: none;\n  background: linear-gradient(to bottom, rgba(0,0,0,.75), transparent 25%, transparent 65%, rgba(0,0,0,.85)); }\n.player.chrome .player-chrome { opacity: 1; }\n.player-top { position: absolute; top: 50px; left: 80px; right: 80px; }\n.player-title { font-size: 44px; font-weight: 700; }\n.player-sub { color: var(--muted); }\n.player-bottom { position: absolute; left: 80px; right: 80px; bottom: 50px; }\n.player-bar { position: relative; height: 10px; background: rgba(255,255,255,.25); border-radius: 5px; }\n.player-buffer { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255,255,255,.35); border-radius: 5px; }\n.player-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 5px; }\n.player-seek { position: absolute; top: -9px; width: 28px; height: 28px; margin-left: -14px; border-radius: 50%; background: #fff; }\n.player-seek.active { background: var(--accent2); transform: scale(1.3); }\n.player-times { display: flex; justify-content: space-between; margin-top: 14px; font-size: 26px; }\n.player-hints { color: var(--muted); font-size: 22px; margin-top: 10px; white-space: pre; }\n.player-spinner { position: absolute; left: 50%; top: 50%; width: 90px; height: 90px; margin: -45px; border-radius: 50%;\n  border: 8px solid rgba(255,255,255,.2); border-top-color: var(--accent); animation: spin 1s linear infinite; }\n.audioview { display: flex; align-items: center; gap: 80px; padding: 0 140px; background: radial-gradient(circle at 30% 40%, #2a1b1f, #0b0b0d 70%); }\n.audio-art { width: 620px; height: 620px; border-radius: 24px; background: var(--bg3) center/cover; flex-shrink: 0; box-shadow: 0 30px 80px rgba(0,0,0,.6); }\n.audio-info { flex: 1; }\n.audio-creator { color: var(--accent2); font-size: 30px; }\n.audio-title { font-size: 54px; margin-bottom: 50px; }\n.nowplaying { position: fixed; right: 50px; bottom: 40px; width: 560px; z-index: 30; display: flex; align-items: center; gap: 18px;\n  background: rgba(30, 30, 36, .95); border-radius: 16px; padding: 14px 20px 20px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,.6); }\n.np-art { width: 70px; height: 70px; border-radius: 10px; background: var(--bg3) center/cover; flex-shrink: 0; }\n.np-text { flex: 1; min-width: 0; }\n.np-title { font-weight: 700; font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }\n.np-sub { color: var(--muted); font-size: 20px; }\n.np-fill { position: absolute; left: 0; bottom: 0; height: 5px; background: var(--accent); }\n.embedview .embed-frame, .embedview iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }\n.embed-hint { position: absolute; top: 20px; right: 30px; color: var(--muted); font-size: 22px; background: rgba(0,0,0,.6); padding: 6px 14px; border-radius: 8px;\n  transition: opacity .4s; pointer-events: none; }\n.embed-hint.gone { opacity: 0; }\n.embed-time:not(:empty) { color: var(--text); font-weight: 700; margin-right: 18px; }\n.embed-trouble { position: absolute; left: 50%; bottom: 80px; width: 900px; margin-left: -450px; text-align: center; background: rgba(0,0,0,.85); border-radius: 16px; padding: 24px 32px; font-size: 28px; }\n.embed-trouble p { margin: 6px 0; }\n.video-links .card .card-provider { position: absolute; left: 12px; top: 12px; background: rgba(0,0,0,.7); border-radius: 6px; padding: 2px 10px; font-size: 20px; }\n\n/* ---------- misc ---------- */\n.loading { display: flex; align-items: center; gap: 22px; color: var(--muted); padding: 30px 0; }\n.spin { width: 44px; height: 44px; border-radius: 50%; border: 6px solid var(--bg3); border-top-color: var(--accent); animation: spin 1s linear infinite; }\n@keyframes spin { to { transform: rotate(360deg); } }\n.empty { color: var(--muted); padding: 40px 0; font-size: 30px; }\n.error-box { background: var(--bg2); border-radius: 16px; padding: 30px 36px; max-width: 1100px; }\n.toast { position: fixed; left: 50%; bottom: 60px; transform: translate(-50%, 40px); background: #2b2b33; color: var(--text); padding: 18px 34px;\n  border-radius: 14px; opacity: 0; transition: all .25s; z-index: 100; max-width: 1400px; text-align: center; pointer-events: none; }\n.toast.show { opacity: 1; transform: translate(-50%, 0); }\n.icon { display: inline-block; width: 1em; height: 1em; vertical-align: -0.12em; }\n.icon svg { width: 100%; height: 100%; display: block; }\n.nav-icon .icon { width: 36px; height: 36px; vertical-align: middle; }\n.lock .icon { width: 64px; height: 64px; }\n.lock-icon .icon { width: 96px; height: 96px; }\n.hero-play .icon { width: 140px; height: 140px; filter: drop-shadow(0 6px 20px rgba(0,0,0,.7)); }\n.card-kind-big .icon { width: 90px; height: 90px; }\n.np-state { color: var(--muted); font-size: 20px; }\n\n/* ---------- running in a normal browser ---------- */\n.web .focusable { cursor: pointer; }\n.web .scroll-y, .web .scrollbox, .web .tiers { overflow-y: auto; scrollbar-width: none; }\n.web .row-scroll { overflow-x: auto; scrollbar-width: none; }\n.web .scroll-y::-webkit-scrollbar, .web .scrollbox::-webkit-scrollbar, .web .row-scroll::-webkit-scrollbar { display: none; }\n.webbar { position: fixed; top: 18px; right: 24px; z-index: 300; display: flex; align-items: center; gap: 12px; }\n.webbar-btn { font: inherit; font-size: 24px; line-height: 1; padding: 12px 24px; border-radius: 999px; border: 0; cursor: pointer;\n  background: rgba(44, 44, 52, .92); color: var(--text); }\n.webbar-btn:hover { background: var(--text); color: #111; }\n.webbar-btn:focus-visible { outline: 3px solid var(--accent); }\n.webbar-hint { order: -1; color: var(--muted); font-size: 20px; max-width: 560px; background: rgba(15, 15, 18, .88); padding: 8px 16px; border-radius: 12px;\n  transition: opacity .6s; }\n.webbar-hint.gone { opacity: 0; pointer-events: none; }\n/* While something plays, the bar hides until the mouse moves or points at it. */\n.webbar { transition: opacity .3s; }\n.web:has(.overlay:not(.hidden)):not(.mouse) .webbar:not(:hover):not(:focus-within) { opacity: 0; }\n.webbar-tag { order: -2; font-size: 20px; color: var(--accent2); background: rgba(15, 15, 18, .88); padding: 8px 16px; border-radius: 12px; }\n.portrait .webbar { top: 24px; right: 40px; }\n.portrait .webbar-tag { font-size: 36px; }\n.portrait .webbar-btn { font-size: 48px; padding: 20px 36px; }\n.portrait .webbar-hint { display: none; }\n.portrait .page { padding-top: 150px; }\n@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }\n");
 
-  window.APP_VERSION = "2.3.1";
+  window.APP_VERSION = "2.3.2";
 
 /* qrcode.js */
 (function (define, exports, module) {
@@ -3516,7 +3516,10 @@ var qrcode = function() {
 
   // ---------------- video ----------------
 
-  var video = { el: null, media: null, transport: null, post: null, queue: null, index: 0, hideT: null };
+  var video = { el: null, media: null, transport: null, post: null, hideT: null };
+  // The list a video was started from (a creator's posts, the home feed...) in the order it's shown, so the next and
+  // previous videos follow the chosen sort. Patreon videos and YouTube or Vimeo posts take their turns in it.
+  var watch = { queue: null, index: 0 };
 
   function buildVideo() {
     var media = h('video', { preload: 'auto', playsinline: true });
@@ -3576,7 +3579,7 @@ var qrcode = function() {
     if (!video.el) buildVideo();
     Audio.pause();
     if (video.transport) video.transport.stop();
-    video.post = post; video.queue = queue || [post]; video.index = index || 0;
+    video.post = post; watch.queue = queue || [post]; watch.index = index || 0;
     video.el.querySelector('.player-title').textContent = post.title;
     video.el.querySelector('.player-sub').textContent = (post.campaign ? post.campaign.name + '  ·  ' : '') + U.timeAgo(post.published);
     video.el.classList.remove('hidden');
@@ -3593,22 +3596,27 @@ var qrcode = function() {
   }
 
   function playNext(dir) {
-    var q = video.queue || [];
-    for (var i = video.index + dir; i >= 0 && i < q.length; i += dir) {
-      if (q[i].video && q[i].canView) { openVideo(q[i], q, i); return true; }
+    var q = watch.queue || [];
+    for (var i = watch.index + dir; i >= 0 && i < q.length; i += dir) {
+      var p = q[i];
+      if (!p.canView || !(p.video || (p.embed && p.embed.player))) continue;
+      if (p.video) { if (Player.active === 'embed') closeEmbed(true); openVideo(p, q, i); }
+      else { if (Player.active === 'video') closeVideo(true); openEmbed(p.embed, p, q, i); }
+      return true;
     }
-    if (dir > 0) closeVideo();
+    if (dir > 0) { if (Player.active === 'embed') closeEmbed(); else closeVideo(); }
     return false;
   }
 
-  function closeVideo() {
+  // quiet: another video takes over the screen straight away.
+  function closeVideo(quiet) {
     if (!video.el) return;
     if (video.transport) video.transport.stop();
     video.media.pause();
     detach(video.media);
     video.el.classList.add('hidden');
     Player.active = null;
-    if (Player.onClose) Player.onClose();
+    if (!quiet && Player.onClose) Player.onClose();
   }
 
   // ---------------- audio (keeps playing while you browse) ----------------
@@ -3725,6 +3733,14 @@ var qrcode = function() {
     if (d.event === 'finish') embed.state = 0;
     if (embed.state === 1) hideTrouble();
     embedProgress();
+    // At the end, go on to the next post in the list (rather than whatever YouTube would pick).
+    if (embed.state === 0 && embed.queued && !embed.ended) {
+      embed.ended = true;
+      if (Store.settings().autoplayNext) {
+        var frame = embed.frame;
+        setTimeout(function () { if (embed.frame === frame && Player.active === 'embed') playNext(1); }, 0);
+      }
+    }
   }
   // The post's own YouTube or Vimeo video gets a resume point and counts as watched near the end, like Patreon's.
   function mainEmbed() { return embed.post && embed.post.embed && embed.link && embed.post.embed.url === embed.link.url; }
@@ -3750,7 +3766,8 @@ var qrcode = function() {
     clearTimeout(embed.timer);
     embed.el.querySelector('.embed-trouble').classList.add('hidden');
   }
-  function openEmbed(link, post) {
+  // queue and index: the list the post was played from, for going on to the next one.
+  function openEmbed(link, post, queue, index) {
     Audio.pause();
     if (!embed.el) {
       embed.el = h('div#embed.overlay.embedview.hidden', h('div.embed-frame'),
@@ -3761,6 +3778,8 @@ var qrcode = function() {
     }
     var src = link.player;
     embed.link = link; embed.post = post; embed.state = -1; embed.time = link.start || 0; embed.duration = 0; embed.done = false; embed.saved = 0;
+    embed.queued = !!queue; embed.ended = false;
+    if (queue) { watch.queue = queue; watch.index = index || 0; }
     var prog = mainEmbed() && Progress.get(post.id);
     if (prog && prog.position > 5 && (!prog.duration || prog.position / prog.duration < 0.9)) {
       embed.time = Math.floor(prog.position);
@@ -3815,7 +3834,7 @@ var qrcode = function() {
     }
     flashHint();
   }
-  function closeEmbed() {
+  function closeEmbed(quiet) {
     if (mainEmbed() && !embed.done && embed.duration && embed.time > 5) Progress.save(embed.post, embed.time, embed.duration);
     clearTimeout(embed.timer);
     clearTimeout(embed.hintTimer);
@@ -3823,13 +3842,13 @@ var qrcode = function() {
     embed.frame = null;
     embed.el.classList.add('hidden');
     Player.active = null;
-    if (Player.onClose) Player.onClose();
+    if (!quiet && Player.onClose) Player.onClose();
   }
   // Plays a YouTube or Vimeo link inside the app. The app runs as patreon.com, so YouTube's player gets the web
   // page it expects; the TV's YouTube app is only offered when a video won't play here.
-  function openLink(link, post) {
+  function openLink(link, post, queue, index) {
     if (!link || !link.player) return false;
-    openEmbed(link, post);
+    openEmbed(link, post, queue, index);
     return true;
   }
 
@@ -3851,12 +3870,16 @@ var qrcode = function() {
     play: function (post, queue, index) {
       if (post.video) openVideo(post, queue, index);
       else if (post.audio) Audio.open(post, queue, index);
-      else if (post.embed && post.embed.player) openLink(post.embed, post);
+      else if (post.embed && post.embed.player) openLink(post.embed, post, queue, index);
       else return false;
       return true;
     },
     openLink: openLink,
     audio: Audio,
+    // The post on screen in a player, if any.
+    watching: function () {
+      return Player.active === 'video' ? video.post : Player.active === 'embed' ? embed.post : Player.active === 'audio' ? Audio.post : null;
+    },
     // Returns true when the key was consumed by a player.
     key: function (a) {
       if (Player.active === 'video') {
@@ -3877,6 +3900,7 @@ var qrcode = function() {
       }
       if (Player.active === 'embed') {
         if (a === 'back' || a === 'stop') closeEmbed();
+        else if ((a === 'next' || a === 'prev') && embed.queued) playNext(a === 'next' ? 1 : -1);
         else embedKey(a);
         return true;
       }

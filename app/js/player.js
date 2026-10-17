@@ -127,7 +127,10 @@
 
   // ---------------- video ----------------
 
-  var video = { el: null, media: null, transport: null, post: null, queue: null, index: 0, hideT: null };
+  var video = { el: null, media: null, transport: null, post: null, hideT: null };
+  // The list a video was started from (a creator's posts, the home feed...) in the order it's shown, so the next and
+  // previous videos follow the chosen sort. Patreon videos and YouTube or Vimeo posts take their turns in it.
+  var watch = { queue: null, index: 0 };
 
   function buildVideo() {
     var media = h('video', { preload: 'auto', playsinline: true });
@@ -187,7 +190,7 @@
     if (!video.el) buildVideo();
     Audio.pause();
     if (video.transport) video.transport.stop();
-    video.post = post; video.queue = queue || [post]; video.index = index || 0;
+    video.post = post; watch.queue = queue || [post]; watch.index = index || 0;
     video.el.querySelector('.player-title').textContent = post.title;
     video.el.querySelector('.player-sub').textContent = (post.campaign ? post.campaign.name + '  ·  ' : '') + U.timeAgo(post.published);
     video.el.classList.remove('hidden');
@@ -204,22 +207,27 @@
   }
 
   function playNext(dir) {
-    var q = video.queue || [];
-    for (var i = video.index + dir; i >= 0 && i < q.length; i += dir) {
-      if (q[i].video && q[i].canView) { openVideo(q[i], q, i); return true; }
+    var q = watch.queue || [];
+    for (var i = watch.index + dir; i >= 0 && i < q.length; i += dir) {
+      var p = q[i];
+      if (!p.canView || !(p.video || (p.embed && p.embed.player))) continue;
+      if (p.video) { if (Player.active === 'embed') closeEmbed(true); openVideo(p, q, i); }
+      else { if (Player.active === 'video') closeVideo(true); openEmbed(p.embed, p, q, i); }
+      return true;
     }
-    if (dir > 0) closeVideo();
+    if (dir > 0) { if (Player.active === 'embed') closeEmbed(); else closeVideo(); }
     return false;
   }
 
-  function closeVideo() {
+  // quiet: another video takes over the screen straight away.
+  function closeVideo(quiet) {
     if (!video.el) return;
     if (video.transport) video.transport.stop();
     video.media.pause();
     detach(video.media);
     video.el.classList.add('hidden');
     Player.active = null;
-    if (Player.onClose) Player.onClose();
+    if (!quiet && Player.onClose) Player.onClose();
   }
 
   // ---------------- audio (keeps playing while you browse) ----------------
@@ -336,6 +344,14 @@
     if (d.event === 'finish') embed.state = 0;
     if (embed.state === 1) hideTrouble();
     embedProgress();
+    // At the end, go on to the next post in the list (rather than whatever YouTube would pick).
+    if (embed.state === 0 && embed.queued && !embed.ended) {
+      embed.ended = true;
+      if (Store.settings().autoplayNext) {
+        var frame = embed.frame;
+        setTimeout(function () { if (embed.frame === frame && Player.active === 'embed') playNext(1); }, 0);
+      }
+    }
   }
   // The post's own YouTube or Vimeo video gets a resume point and counts as watched near the end, like Patreon's.
   function mainEmbed() { return embed.post && embed.post.embed && embed.link && embed.post.embed.url === embed.link.url; }
@@ -361,7 +377,8 @@
     clearTimeout(embed.timer);
     embed.el.querySelector('.embed-trouble').classList.add('hidden');
   }
-  function openEmbed(link, post) {
+  // queue and index: the list the post was played from, for going on to the next one.
+  function openEmbed(link, post, queue, index) {
     Audio.pause();
     if (!embed.el) {
       embed.el = h('div#embed.overlay.embedview.hidden', h('div.embed-frame'),
@@ -372,6 +389,8 @@
     }
     var src = link.player;
     embed.link = link; embed.post = post; embed.state = -1; embed.time = link.start || 0; embed.duration = 0; embed.done = false; embed.saved = 0;
+    embed.queued = !!queue; embed.ended = false;
+    if (queue) { watch.queue = queue; watch.index = index || 0; }
     var prog = mainEmbed() && Progress.get(post.id);
     if (prog && prog.position > 5 && (!prog.duration || prog.position / prog.duration < 0.9)) {
       embed.time = Math.floor(prog.position);
@@ -426,7 +445,7 @@
     }
     flashHint();
   }
-  function closeEmbed() {
+  function closeEmbed(quiet) {
     if (mainEmbed() && !embed.done && embed.duration && embed.time > 5) Progress.save(embed.post, embed.time, embed.duration);
     clearTimeout(embed.timer);
     clearTimeout(embed.hintTimer);
@@ -434,13 +453,13 @@
     embed.frame = null;
     embed.el.classList.add('hidden');
     Player.active = null;
-    if (Player.onClose) Player.onClose();
+    if (!quiet && Player.onClose) Player.onClose();
   }
   // Plays a YouTube or Vimeo link inside the app. The app runs as patreon.com, so YouTube's player gets the web
   // page it expects; the TV's YouTube app is only offered when a video won't play here.
-  function openLink(link, post) {
+  function openLink(link, post, queue, index) {
     if (!link || !link.player) return false;
-    openEmbed(link, post);
+    openEmbed(link, post, queue, index);
     return true;
   }
 
@@ -462,12 +481,16 @@
     play: function (post, queue, index) {
       if (post.video) openVideo(post, queue, index);
       else if (post.audio) Audio.open(post, queue, index);
-      else if (post.embed && post.embed.player) openLink(post.embed, post);
+      else if (post.embed && post.embed.player) openLink(post.embed, post, queue, index);
       else return false;
       return true;
     },
     openLink: openLink,
     audio: Audio,
+    // The post on screen in a player, if any.
+    watching: function () {
+      return Player.active === 'video' ? video.post : Player.active === 'embed' ? embed.post : Player.active === 'audio' ? Audio.post : null;
+    },
     // Returns true when the key was consumed by a player.
     key: function (a) {
       if (Player.active === 'video') {
@@ -488,6 +511,7 @@
       }
       if (Player.active === 'embed') {
         if (a === 'back' || a === 'stop') closeEmbed();
+        else if ((a === 'next' || a === 'prev') && embed.queued) playNext(a === 'next' ? 1 : -1);
         else embedKey(a);
         return true;
       }
